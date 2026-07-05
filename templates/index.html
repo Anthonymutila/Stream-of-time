@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Stream of Time{% endblock %}
+
+{% block header %}
+<div class="header-main">
+    <div class="header-actions">
+        <span class="badge count">{{ total }} articles</span>
+        <button id="scrapeBtn" class="btn btn-primary" onclick="triggerScrape()">Refresh News</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="scrapeStatus" class="scrape-status hidden"></div>
+
+<section class="filters">
+    <div class="filter-group">
+        <label for="categoryFilter">Category:</label>
+        <select id="categoryFilter" onchange="filterArticles()">
+            <option value="">All Categories</option>
+            <option value="court">Court</option>
+            <option value="politics">Politics</option>
+            <option value="business">Business</option>
+            <option value="crime">Crime</option>
+            <option value="social">Social</option>
+            <option value="general">General</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label for="sourceFilter">Source:</label>
+        <select id="sourceFilter" onchange="filterArticles()">
+            <option value="">All Sources</option>
+            {% for s in sources %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</section>
+
+<section class="news-grid">
+    {% if articles %}
+        {% for article in articles %}
+        <article class="news-card" data-source="{{ article.source }}" data-category="{{ article.category }}">
+            {% if article.image_url %}
+            <div class="card-image">
+                <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy"
+                     onerror="this.parentElement.style.display='none'">
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <div class="card-meta">
+                    <span class="source-badge">{{ article.source }}</span>
+                    <span class="category-badge cat-{{ article.category }}">{{ article.category|capitalize }}</span>
+                </div>
+                <h2 class="card-title">{{ article.title }}</h2>
+                <p class="card-summary">{{ article.summary }}</p>
+                <div class="card-footer">
+                    {% if article.published_date %}
+                    <span class="card-date">{{ article.published_date[:10] }}</span>
+                    {% endif %}
+                    <a href="{{ url_for('article_detail', article_id=article.id) }}" class="read-more">Read more</a>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <h2>No news yet</h2>
+            <p>Click "Refresh News" above to scrape the latest news from Zambian media.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let pollTimer = null;
+
+    function triggerScrape() {
+        const btn = document.getElementById('scrapeBtn');
+        const status = document.getElementById('scrapeStatus');
+        btn.disabled = true;
+        btn.textContent = 'Scraping...';
+        status.className = 'scrape-status info';
+        status.textContent = 'Starting scrape...';
+        status.classList.remove('hidden');
+
+        fetch('/scrape', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'started' || data.status === 'already_running') {
+                    status.textContent = 'Scraping in progress...';
+                    startPolling();
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Refresh News';
+                    status.className = 'scrape-status error';
+                    status.textContent = data.message || 'Failed to start';
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.textContent = 'Refresh News';
+                status.className = 'scrape-status error';
+                status.textContent = 'Network error. Please try again.';
+            });
+    }
+
+    function startPolling() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(pollStatus, 2000);
+        pollStatus();
+    }
+
+    function pollStatus() {
+        fetch('/scrape/status')
+            .then(r => r.json())
+            .then(data => {
+                const status = document.getElementById('scrapeStatus');
+                const btn = document.getElementById('scrapeBtn');
+                if (data.running) {
+                    const elapsed = data.elapsed ? Math.round(data.elapsed) + 's' : '';
+                    status.className = 'scrape-status info';
+                    status.textContent = `Scraping in progress... ${elapsed ? '(' + elapsed + ')' : ''}`;
+                } else {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                    btn.disabled = false;
+                    btn.textContent = 'Refresh News';
+                    if (data.last_stats && !data.last_stats.error) {
+                        const s = data.last_stats;
+                        status.className = 'scrape-status success';
+                        status.textContent = `Done! Found ${s.civil_found} articles (${s.total_links_found || 0} links scanned, ${s.duplicates_skipped || 0} duplicates, ${s.errors || 0} errors).`;
+                        setTimeout(() => location.reload(), 1500);
+                    } else if (data.last_stats && data.last_stats.error) {
+                        status.className = 'scrape-status error';
+                        status.textContent = 'Error: ' + data.last_stats.error;
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
+    function filterArticles() {
+        const source = document.getElementById('sourceFilter').value.toLowerCase();
+        const category = document.getElementById('categoryFilter').value.toLowerCase();
+        document.querySelectorAll('.news-card').forEach(card => {
+            const matchSource = !source || card.dataset.source.toLowerCase().includes(source);
+            const matchCategory = !category || card.dataset.category === category;
+            card.style.display = (matchSource && matchCategory) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}

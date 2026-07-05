@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Stream of Time{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <div class="container">
+                <div class="header-top">
+                    <div class="header-logo">
+                        <a href="{{ url_for('index') }}">
+                            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Stream of Time Logo">
+                        </a>
+                    </div>
+                    <div class="header-info">
+                        <div id="clock" class="header-clock">
+                            <span class="clock-icon">&#9201;</span>
+                            <span id="clockTime" class="clock-time"></span>
+                            <span id="clockDate" class="clock-date"></span>
+                        </div>
+                        <div class="header-badges">
+                            <div id="weather" class="header-badge weather-badge" style="display:none;">
+                                <span id="weatherIcon" class="badge-icon"></span>
+                                <span class="badge-content">
+                                    <span id="weatherTemp" class="badge-value"></span>
+                                    <span id="weatherDesc" class="badge-label"></span>
+                                </span>
+                            </div>
+                            <div id="currency" class="header-badge currency-badge" style="display:none;">
+                                <span class="badge-icon">$</span>
+                                <span class="badge-content">
+                                    <span class="badge-label">USD/ZMW</span>
+                                    <span id="currencyRate" class="badge-value"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <nav class="header-nav">
+                    <a href="{{ url_for('index') }}" class="nav-link" data-page="index">
+                        <span class="nav-icon">&#128240;</span> Current News
+                    </a>
+                    <a href="{{ url_for('archive') }}" class="nav-link" data-page="archive">
+                        <span class="nav-icon">&#128451;</span> Archive
+                    </a>
+                    <a href="{{ url_for('history') }}" class="nav-link" data-page="history">
+                        <span class="nav-icon">&#128337;</span> History
+                    </a>
+                </nav>
+            </div>
+        </div>
+        {% block header %}{% endblock %}
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <div class="container">
+            <p>Stream of Time &mdash; Every story, Every Moment, In Real Time</p>
+            <p class="copyright">Stream of Time &copy; 2019-<span id="currentYear"></span> All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">Top</button>
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        function updateClock() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('clockTime').textContent = time;
+            document.getElementById('clockDate').textContent = date;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.pathname === window.location.pathname) {
+                link.classList.add('active');
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            document.querySelector('.back-to-top').classList.toggle('visible', window.scrollY > 400);
+        });
+
+        function weatherIcon(code) {
+            if (code <= 1) return '\u2600\uFE0F';
+            if (code <= 3) return '\u26C5';
+            if (code <= 48) return '\uD83C\uDF2B\uFE0F';
+            if (code <= 55) return '\uD83C\uDF26\uFE0F';
+            if (code <= 65) return '\uD83C\uDF27\uFE0F';
+            if (code <= 75) return '\uD83C\uDF28\uFE0F';
+            if (code <= 82) return '\uD83C\uDF26\uFE0F';
+            return '\u26C8\uFE0F';
+        }
+
+        function loadWeather() {
+            fetch('/weather')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) return;
+                    const w = data.current;
+                    document.getElementById('weatherIcon').textContent = weatherIcon(w.code || 0);
+                    document.getElementById('weatherTemp').textContent = w.temp + '\u00B0C';
+                    document.getElementById('weatherDesc').textContent = w.desc;
+                    document.getElementById('weather').style.display = '';
+                })
+                .catch(() => {});
+        }
+        loadWeather();
+
+        function loadCurrency() {
+            fetch('/currency')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) return;
+                    document.getElementById('currencyRate').textContent = 'K' + data.usd_to_zmw.toFixed(2);
+                    document.getElementById('currency').style.display = '';
+                })
+                .catch(() => {});
+        }
+        loadCurrency();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

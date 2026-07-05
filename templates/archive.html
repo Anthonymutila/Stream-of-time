@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Archive — Stream of Time{% endblock %}
+
+{% block head %}
+<style>
+    .month-heading { font-size: 1.1rem; color: #555; margin: 20px 0 10px; padding-left: 8px; border-left: 3px solid #2563eb; }
+    .year-heading { font-size: 1.4rem; margin: 30px 0 10px; }
+</style>
+{% endblock %}
+
+{% block header %}
+<h1>Article Archive</h1>
+<p class="tagline">Civil court news older than 7 days</p>
+<div class="header-actions">
+    <span class="badge count">{{ total }} archived articles</span>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if months %}
+<section class="archive-filters">
+    <button class="year-btn active" onclick="filterMonth('all')">All</button>
+    {% for (year, month), articles in months.items() %}
+    {% if year > 0 %}
+    <button class="year-btn" onclick="filterMonth('{{ year }}-{{ '%02d'|format(month) }}')">{{ ["","January","February","March","April","May","June","July","August","September","October","November","December"][month] }} {{ year }}</button>
+    {% endif %}
+    {% endfor %}
+</section>
+
+{% set current_year = {'val': None} %}
+{% for (year, month), articles in months.items() %}
+{% if year != current_year.val %}
+{% if current_year.val is not none %}</section>{% endif %}
+{% set _ = current_year.update({'val': year}) %}
+<section class="archive-year-section" data-year="{{ year }}">
+    <h2 class="year-heading">{{ year }} <span class="year-count">({{ articles|length }} articles this year)</span></h2>
+{% endif %}
+<section class="archive-month-section" data-month="{{ year }}-{{ '%02d'|format(month) }}">
+    <h3 class="month-heading">{{ ["","January","February","March","April","May","June","July","August","September","October","November","December"][month] }} <span class="year-count">({{ articles|length }} articles)</span></h3>
+    <section class="news-grid">
+        {% for article in articles %}
+        <article class="news-card">
+            {% if article.image_url %}
+            <div class="card-image">
+                <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy"
+                     onerror="this.parentElement.style.display='none'">
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <div class="card-meta">
+                    <span class="source-badge">{{ article.source }}</span>
+                    <span class="case-badge case-{{ article.case_type }}">{{ article.case_type|capitalize }}</span>
+                </div>
+                <h3 class="card-title">{{ article.title }}</h3>
+                <p class="card-summary">{{ article.summary }}</p>
+                <div class="card-footer">
+                    {% if article.published_date %}
+                    <span class="card-date">{{ article.published_date[:10] }}</span>
+                    {% endif %}
+                    <a href="{{ url_for('article_detail', article_id=article.id) }}" class="read-more">Read more</a>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+</section>
+{% endfor %}
+</section>
+{% else %}
+<div class="empty-state">
+    <h2>No archived articles yet</h2>
+    <p>Articles older than 7 days will appear here automatically as they are scraped.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary" style="margin-top: 16px;">Back to current news</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function filterMonth(month) {
+        document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        document.querySelectorAll('.archive-month-section').forEach(section => {
+            section.style.display = (month === 'all' || section.dataset.month === month) ? '' : 'none';
+        });
+
+        document.querySelectorAll('.archive-year-section').forEach(section => {
+            let visible = section.querySelectorAll('.archive-month-section:not([style*="display: none"])');
+            section.style.display = visible.length > 0 ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}

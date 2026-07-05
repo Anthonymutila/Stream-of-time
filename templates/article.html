@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} — Stream of Time{% endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block content %}
+<article class="article-detail">
+    <div class="article-meta">
+        <span class="source-badge">{{ article.source }}</span>
+        <span class="category-badge cat-{{ article.category }}">{{ article.category|capitalize }}</span>
+        {% if article.published_date %}
+        <span class="article-date">{{ article.published_date[:10] }}</span>
+        {% endif %}
+    </div>
+
+    <h1>{{ article.title }}</h1>
+
+    {% if article.image_url %}
+    <div class="article-image">
+        <img src="{{ article.image_url }}" alt="{{ article.title }}"
+             onerror="this.style.display='none'">
+    </div>
+    {% endif %}
+
+    <div class="article-content">
+        {% for paragraph in article.content.split('\n\n') %}
+            {% if paragraph.strip() %}
+            <p>{{ paragraph.strip() }}</p>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="article-footer">
+        <a href="{{ article.url }}" target="_blank" rel="noopener" class="btn btn-primary">
+            View original article on {{ article.source }} &rarr;
+        </a>
+        <p class="scraped-info">Scraped: {{ article.scraped_date[:10] }}</p>
+    </div>
+</article>
+{% endblock %}

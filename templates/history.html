@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Scrape History — Stream of Time{% endblock %}
+
+{% block header %}
+<h1>Scrape History</h1>
+<p class="tagline">Record of every scrape run</p>
+<div class="header-actions">
+    <span class="badge count">{{ total }} runs</span>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if runs %}
+<section class="history-list">
+    {% for run in runs %}
+    <div class="history-card">
+        <div class="history-header">
+            <div class="history-time">
+                <strong>{{ run.timestamp[:10] }}</strong>
+                <span>{{ run.timestamp[11:19] }} UTC</span>
+            </div>
+            <div class="history-duration">{{ run.duration_seconds }}s</div>
+        </div>
+        <div class="history-stats">
+            <div class="stat">
+                <span class="stat-value">{{ run.stats.civil_found or 0 }}</span>
+                <span class="stat-label">Articles Found</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">{{ run.stats.total_links_found or 0 }}</span>
+                <span class="stat-label">Links Scanned</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">{{ run.stats.duplicates_skipped or 0 }}</span>
+                <span class="stat-label">Duplicates</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">{{ run.stats.errors or 0 }}</span>
+                <span class="stat-label">Errors</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">{{ run.stats.total_after or 0 }}</span>
+                <span class="stat-label">Total in DB</span>
+            </div>
+        </div>
+        {% if run.stats.sources %}
+        <div class="history-sources">
+            <span class="sources-label">Sources:</span>
+            {% for source, count in run.stats.sources.items() %}
+            <span class="source-tag">{{ source }}: {{ count }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="history-id">ID: {{ run.scrape_id }}</div>
+    </div>
+    {% endfor %}
+</section>
+{% else %}
+<div class="empty-state">
+    <h2>No scrape history yet</h2>
+    <p>Run a scrape from the main page to start recording history.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary" style="margin-top: 16px;">Go to News</a>
+</div>
+{% endif %}
+{% endblock %}
