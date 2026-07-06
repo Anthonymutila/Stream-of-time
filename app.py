@@ -6,8 +6,8 @@ from datetime import datetime, timezone, timedelta
 import requests as http_requests
 from flask import Flask, render_template, jsonify, request, url_for
 
-from utils.storage import load_articles, get_article_by_id, save_scrape_run, load_history
-from scrapers.news_scraper import run_scrape
+from utils.storage import load_articles, get_article_by_id, save_scrape_run, load_history, reclassify_articles
+from scrapers.news_scraper import run_scrape, get_progress
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -73,15 +73,19 @@ def index():
     all_articles = load_articles()
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     articles = [a for a in all_articles if _is_recent(a, cutoff)]
+    category = request.args.get("category", "").strip().lower()
+    if category:
+        articles = [a for a in articles if a.get("category", "").lower() == category]
     articles.sort(key=lambda a: a.get("published_date") or a.get("scraped_date") or "", reverse=True)
     sources = sorted({a["source"] for a in articles})
-    case_types = sorted({a["case_type"] for a in articles})
+    case_types = sorted({a.get("case_type", "") for a in articles})
     return render_template(
         "index.html",
         articles=articles,
         total=len(articles),
         sources=sources,
         case_types=case_types,
+        active_category=category,
     )
 
 
@@ -196,6 +200,11 @@ def history():
     return render_template("history.html", runs=runs, total=len(runs))
 
 
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
 @app.route("/news")
 def news_json():
     articles = load_articles()
@@ -225,6 +234,7 @@ def scrape_status():
         status["elapsed"] = round(time.time() - status["started_at"], 1)
     elif status["finished_at"] and status["started_at"]:
         status["elapsed"] = round(status["finished_at"] - status["started_at"], 1)
+    status["progress"] = get_progress()
     return jsonify(status)
 
 
@@ -248,5 +258,12 @@ def page_not_found(e):
     return render_template("404.html"), 404
 
 
+@app.route("/reclassify", methods=["POST"])
+def reclassify():
+    changed = reclassify_articles()
+    return jsonify({"status": "ok", "reclassified": changed})
+
+
 if __name__ == "__main__":
+    reclassify_articles()
     app.run(debug=True, host="0.0.0.0", port=5000)

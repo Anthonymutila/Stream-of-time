@@ -1,30 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}Stream of Time{% endblock %}
-
-{% block header %}
-<div class="header-main">
-    <div class="header-actions">
-        <span class="badge count">{{ total }} articles</span>
-        <button id="scrapeBtn" class="btn btn-primary" onclick="triggerScrape()">Refresh News</button>
-    </div>
-</div>
-{% endblock %}
+{% block title %}{% if active_category %}{{ active_category|capitalize }} Stories{% else %}Stream of Time{% endif %}{% endblock %}
 
 {% block content %}
-<div id="scrapeStatus" class="scrape-status hidden"></div>
+{% if active_category %}
+<h1 class="category-heading">{{ active_category|capitalize }} Stories</h1>
+{% endif %}
+<div id="progressWrap" class="progress-wrap hidden">
+    <div class="progress-header">
+        <span id="progressLabel" class="progress-label">Starting...</span>
+        <span id="progressPct" class="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+        <div id="progressFill" class="progress-fill"></div>
+    </div>
+    <div id="progressDetail" class="progress-detail"></div>
+</div>
 
 <section class="filters">
+    <div class="filter-group search-group">
+        <input type="text" id="searchInput" placeholder="Search by keywords (e.g. crime court)" oninput="filterArticles()">
+    </div>
     <div class="filter-group">
         <label for="categoryFilter">Category:</label>
         <select id="categoryFilter" onchange="filterArticles()">
             <option value="">All Categories</option>
-            <option value="court">Court</option>
-            <option value="politics">Politics</option>
-            <option value="business">Business</option>
-            <option value="crime">Crime</option>
-            <option value="social">Social</option>
-            <option value="general">General</option>
+            <option value="court"{% if active_category == 'court' %} selected{% endif %}>Court</option>
+            <option value="politics"{% if active_category == 'politics' %} selected{% endif %}>Politics</option>
+            <option value="business"{% if active_category == 'business' %} selected{% endif %}>Business</option>
+            <option value="crime"{% if active_category == 'crime' %} selected{% endif %}>Crime</option>
+            <option value="social"{% if active_category == 'social' %} selected{% endif %}>Social</option>
+            <option value="general"{% if active_category == 'general' %} selected{% endif %}>General</option>
         </select>
     </div>
     <div class="filter-group">
@@ -78,38 +84,34 @@
     let pollTimer = null;
 
     function triggerScrape() {
-        const btn = document.getElementById('scrapeBtn');
-        const status = document.getElementById('scrapeStatus');
-        btn.disabled = true;
-        btn.textContent = 'Scraping...';
-        status.className = 'scrape-status info';
-        status.textContent = 'Starting scrape...';
-        status.classList.remove('hidden');
+        const wrap = document.getElementById('progressWrap');
+        wrap.classList.remove('hidden');
+        setProgress('Starting...', 0, '');
 
         fetch('/scrape', { method: 'POST' })
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'started' || data.status === 'already_running') {
-                    status.textContent = 'Scraping in progress...';
                     startPolling();
                 } else {
-                    btn.disabled = false;
-                    btn.textContent = 'Refresh News';
-                    status.className = 'scrape-status error';
-                    status.textContent = data.message || 'Failed to start';
+                    wrap.classList.add('hidden');
                 }
             })
             .catch(() => {
-                btn.disabled = false;
-                btn.textContent = 'Refresh News';
-                status.className = 'scrape-status error';
-                status.textContent = 'Network error. Please try again.';
+                wrap.classList.add('hidden');
             });
+    }
+
+    function setProgress(label, pct, detail) {
+        document.getElementById('progressLabel').textContent = label;
+        document.getElementById('progressPct').textContent = pct + '%';
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressDetail').textContent = detail;
     }
 
     function startPolling() {
         if (pollTimer) clearInterval(pollTimer);
-        pollTimer = setInterval(pollStatus, 2000);
+        pollTimer = setInterval(pollStatus, 1500);
         pollStatus();
     }
 
@@ -117,25 +119,16 @@
         fetch('/scrape/status')
             .then(r => r.json())
             .then(data => {
-                const status = document.getElementById('scrapeStatus');
-                const btn = document.getElementById('scrapeBtn');
+                const wrap = document.getElementById('progressWrap');
                 if (data.running) {
-                    const elapsed = data.elapsed ? Math.round(data.elapsed) + 's' : '';
-                    status.className = 'scrape-status info';
-                    status.textContent = `Scraping in progress... ${elapsed ? '(' + elapsed + ')' : ''}`;
+                    const p = data.progress || {};
+                    setProgress(p.phase || 'Working...', p.percent || 0, p.detail || '');
                 } else {
                     clearInterval(pollTimer);
                     pollTimer = null;
-                    btn.disabled = false;
-                    btn.textContent = 'Refresh News';
+                    wrap.classList.add('hidden');
                     if (data.last_stats && !data.last_stats.error) {
-                        const s = data.last_stats;
-                        status.className = 'scrape-status success';
-                        status.textContent = `Done! Found ${s.civil_found} articles (${s.total_links_found || 0} links scanned, ${s.duplicates_skipped || 0} duplicates, ${s.errors || 0} errors).`;
-                        setTimeout(() => location.reload(), 1500);
-                    } else if (data.last_stats && data.last_stats.error) {
-                        status.className = 'scrape-status error';
-                        status.textContent = 'Error: ' + data.last_stats.error;
+                        setTimeout(() => location.reload(), 1000);
                     }
                 }
             })
@@ -143,13 +136,24 @@
     }
 
     function filterArticles() {
+        const raw = document.getElementById('searchInput').value.trim().toLowerCase();
+        const keywords = raw ? raw.split(/\s+/) : [];
         const source = document.getElementById('sourceFilter').value.toLowerCase();
         const category = document.getElementById('categoryFilter').value.toLowerCase();
         document.querySelectorAll('.news-card').forEach(card => {
+            const title = card.querySelector('.card-title').textContent.toLowerCase();
+            const summary = card.querySelector('.card-summary').textContent.toLowerCase();
+            const text = title + ' ' + summary;
+            const matchSearch = keywords.length === 0 || keywords.every(kw => text.includes(kw));
             const matchSource = !source || card.dataset.source.toLowerCase().includes(source);
             const matchCategory = !category || card.dataset.category === category;
-            card.style.display = (matchSource && matchCategory) ? '' : 'none';
+            card.style.display = (matchSearch && matchSource && matchCategory) ? '' : 'none';
         });
+    }
+
+    if (new URLSearchParams(window.location.search).get('scan') === '1') {
+        triggerScrape();
+        history.replaceState(null, '', window.location.pathname);
     }
 </script>
 {% endblock %}

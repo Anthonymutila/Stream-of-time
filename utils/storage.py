@@ -131,3 +131,20 @@ def save_scrape_run(scrape_id: str, stats: dict, duration: float):
 def generate_scrape_id() -> str:
     raw = f"{time.time()}|{os.getpid()}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+
+
+def reclassify_articles():
+    from utils.filter import classify_article, detect_case_type, _normalize
+    articles = load_articles()
+    changed = 0
+    for a in articles:
+        old_cat = a.get("category", "")
+        new_cat = classify_article(a.get("title", ""), a.get("content", ""))
+        if new_cat != old_cat:
+            a["category"] = new_cat
+            if new_cat == "court":
+                a["case_type"] = detect_case_type(_normalize(f"{a.get('title','')} {a.get('content','')}"))
+            changed += 1
+    if changed:
+        save_articles(articles)
+    return changed

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+env_venv/
+*.json
+!templates/*.html
+run_scrape.py
+test_*.py

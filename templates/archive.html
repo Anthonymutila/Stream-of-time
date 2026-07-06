@@ -10,10 +10,8 @@
 {% endblock %}
 
 {% block header %}
-<h1>Article Archive</h1>
-<p class="tagline">Civil court news older than 7 days</p>
-<div class="header-actions">
-    <span class="badge count">{{ total }} archived articles</span>
+<div style="text-align:center;">
+    <h1>Article Archive</h1>
 </div>
 {% endblock %}
 
@@ -70,7 +68,7 @@
 {% else %}
 <div class="empty-state">
     <h2>No archived articles yet</h2>
-    <p>Articles older than 7 days will appear here automatically as they are scraped.</p>
+    <p>Articles older than 7 days will appear here automatically as they are scanned.</p>
     <a href="{{ url_for('index') }}" class="btn btn-primary" style="margin-top: 16px;">Back to current news</a>
 </div>
 {% endif %}

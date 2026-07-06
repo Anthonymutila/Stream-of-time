@@ -27,6 +27,15 @@ COURT_KEYWORDS = [
     "ordered to pay", "ruled that", "judgment of the court", "court judgment",
     "court dismisses", "court rules", "court case", "court hearing",
     "ruling", "verdict", "settlement",
+    "constitutional court", "magistrate court", "magistrates court",
+    "supreme court", "court of appeal", "subordinate court",
+    "judge", "judges", "justice", "bench",
+    "sentence", "sentenced", "acquitted", "convicted",
+    "bail", "remand", "detention",
+    "applicant", "application",
+    "hearings", "trial", "proceedings",
+    "legal", "litigation", "advocate", "barrister", "lawyer",
+    "attorney", "solicitor",
 ]
 
 POLITICS_KEYWORDS = [
@@ -84,6 +93,15 @@ def classify_article(title: str, content: str = "") -> str:
     content_norm = _normalize(content)
     combined = f"{title_norm} {content_norm}"
 
+    # Check for strong political endorsement/support articles first
+    political_endorsement_patterns = [
+        "endorse", "endorsed", "endorsing", "endorsement",
+        "support for", "supports", "backing",
+        "second term", "re-election", "reelection",
+        "vote for", "campaign for",
+    ]
+    is_political_endorsement = any(p in title_norm for p in political_endorsement_patterns)
+
     # Score each category
     scores = {
         "court": 0,
@@ -122,6 +140,10 @@ def classify_article(title: str, content: str = "") -> str:
             scores["social"] += 2
         elif kw in combined:
             scores["social"] += 1
+
+    # If article is a political endorsement, override court classification
+    if is_political_endorsement and scores["politics"] > 0:
+        return "politics"
 
     # Get the highest scoring category
     best_category = max(scores, key=scores.get)

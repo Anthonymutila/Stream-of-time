@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}About — Stream of Time{% endblock %}
+
+{% block header %}
+<div style="text-align:center;">
+    <h1>About</h1>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="about-content">
+    <div class="about-card">
+        <h2>Stream of Time</h2>
+        <p class="about-tagline">Every story, Every Moment, In Real Time</p>
+        <p>Stream of Time is a news aggregation platform that scans Zambian media outlets for civil court news and related stories. It automatically collects, classifies, and organizes articles from multiple sources into a single, easy-to-browse feed.</p>
+    </div>
+
+    <div class="about-card">
+        <h3>How It Works</h3>
+        <p>The system periodically scans news websites and uses keyword-based classification to identify relevant articles. Articles are categorized into court, politics, business, crime, social, and general topics. Court articles are further classified by case type — land, contract, labour, family, debt, defamation, and more.</p>
+    </div>
+
+    <div class="about-card">
+        <h3>News Sources</h3>
+        <div class="about-sources">
+            <span class="source-tag">Lusaka Times</span>
+            <span class="source-tag">Zambia Daily Mail</span>
+            <span class="source-tag">Times of Zambia</span>
+            <span class="source-tag">Mwebantu</span>
+            <span class="source-tag">Zambia Reports</span>
+            <span class="source-tag">Daily Nation Zambia</span>
+            <span class="source-tag">Zambian Eye</span>
+            <span class="source-tag">Kalemba News</span>
+        </div>
+    </div>
+</section>
+{% endblock %}

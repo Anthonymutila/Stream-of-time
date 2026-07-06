@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Stream of Time{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block head %}{% endblock %}
 </head>
@@ -12,53 +15,56 @@
     <header>
         <div class="header-inner">
             <div class="container">
-                <div class="header-top">
-                    <div class="header-logo">
-                        <a href="{{ url_for('index') }}">
-                            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Stream of Time Logo">
-                        </a>
-                    </div>
-                    <div class="header-info">
-                        <div id="clock" class="header-clock">
-                            <span class="clock-icon">&#9201;</span>
-                            <span id="clockTime" class="clock-time"></span>
-                            <span id="clockDate" class="clock-date"></span>
+                <nav class="header-nav">
+                    <div class="nav-logo-group">
+                        <div class="logo-clock-row">
+                            <a href="{{ url_for('index') }}" class="nav-logo">
+                                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Stream of Time Logo">
+                            </a>
+                            <div id="clock" class="header-clock">
+                                <span id="clockTime" class="clock-time"></span>
+                                <span id="clockDate" class="clock-date"></span>
+                            </div>
                         </div>
-                        <div class="header-badges">
-                            <div id="weather" class="header-badge weather-badge" style="display:none;">
-                                <span id="weatherIcon" class="badge-icon"></span>
+                        <div class="nav-badges-below">
+                            <div id="weather" class="header-badge weather-badge">
+                                <span id="weatherIcon" class="badge-icon">&#9728;</span>
                                 <span class="badge-content">
-                                    <span id="weatherTemp" class="badge-value"></span>
-                                    <span id="weatherDesc" class="badge-label"></span>
+                                    <span id="weatherTemp" class="badge-value">--</span>
+                                    <span id="weatherDesc" class="badge-label">Weather</span>
                                 </span>
                             </div>
-                            <div id="currency" class="header-badge currency-badge" style="display:none;">
+                            <div id="currency" class="header-badge currency-badge">
                                 <span class="badge-icon">$</span>
                                 <span class="badge-content">
                                     <span class="badge-label">USD/ZMW</span>
-                                    <span id="currencyRate" class="badge-value"></span>
+                                    <span id="currencyRate" class="badge-value">--</span>
                                 </span>
                             </div>
                         </div>
                     </div>
-                </div>
-                <nav class="header-nav">
-                    <a href="{{ url_for('index') }}" class="nav-link" data-page="index">
-                        <span class="nav-icon">&#128240;</span> Current News
-                    </a>
-                    <a href="{{ url_for('archive') }}" class="nav-link" data-page="archive">
-                        <span class="nav-icon">&#128451;</span> Archive
-                    </a>
-                    <a href="{{ url_for('history') }}" class="nav-link" data-page="history">
-                        <span class="nav-icon">&#128337;</span> History
-                    </a>
+                    <div class="nav-links">
+                        <a href="{{ url_for('index') }}?scan=1" class="nav-link" data-page="index">
+                            <span class="nav-icon">&#128240;</span> Current Stories
+                        </a>
+                        <a href="{{ url_for('index') }}?category=court" class="nav-link">
+                            <span class="nav-icon">&#9878;</span> Court Stories
+                        </a>
+                        <a href="{{ url_for('archive') }}" class="nav-link" data-page="archive">
+                            <span class="nav-icon">&#128451;</span> Archive
+                        </a>
+                        <a href="{{ url_for('about') }}" class="nav-link" data-page="about">
+                            <span class="nav-icon">&#128712;</span> About
+                        </a>
+                        <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">&#9789;</button>
+                    </div>
                 </nav>
             </div>
         </div>
-        {% block header %}{% endblock %}
     </header>
 
     <main class="container">
+        {% block header %}{% endblock %}
         {% block content %}{% endblock %}
     </main>
     <footer>
@@ -112,7 +118,6 @@
                     document.getElementById('weatherIcon').textContent = weatherIcon(w.code || 0);
                     document.getElementById('weatherTemp').textContent = w.temp + '\u00B0C';
                     document.getElementById('weatherDesc').textContent = w.desc;
-                    document.getElementById('weather').style.display = '';
                 })
                 .catch(() => {});
         }
@@ -124,11 +129,25 @@
                 .then(data => {
                     if (data.error) return;
                     document.getElementById('currencyRate').textContent = 'K' + data.usd_to_zmw.toFixed(2);
-                    document.getElementById('currency').style.display = '';
                 })
                 .catch(() => {});
         }
         loadCurrency();
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('themeToggle').innerHTML = isDark ? '&#9788;' : '&#9789;';
+        }
+
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeToggle').innerHTML = '&#9788;';
+            }
+        })();
     </script>
     {% block scripts %}{% endblock %}
 </body>

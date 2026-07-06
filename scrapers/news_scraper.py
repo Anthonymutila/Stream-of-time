@@ -50,6 +50,23 @@ _session.mount("http://", _adapter)
 
 _lock = threading.Lock()
 
+# Shared progress state
+_progress = {"phase": "", "percent": 0, "detail": ""}
+_progress_lock = threading.Lock()
+
+
+def get_progress() -> dict:
+    with _progress_lock:
+        return dict(_progress)
+
+
+def _set_progress(phase="", percent=0, detail=""):
+    with _progress_lock:
+        _progress["phase"] = phase
+        _progress["percent"] = percent
+        _progress["detail"] = detail
+
+
 # Concurrency limits
 SOURCE_WORKERS = 12
 ARTICLE_WORKERS = 14
@@ -186,14 +203,18 @@ def _scrape_source(source_name: str, base_url: str, path_variants: list[str]) ->
     urls_to_try.append(base_url)
     all_links = []
     seen = set()
+    court_paths = [p.lower() for p in path_variants if "court" in p.lower()]
     for listing_url in urls_to_try:
         soup = _get_page(listing_url)
         if not soup:
             continue
         links = _collect_links_from_page(soup, base_url, source_name)
+        is_court_page = any(cp in listing_url.lower() for cp in court_paths)
         for link in links:
             if link["url"] not in seen:
                 seen.add(link["url"])
+                if is_court_page:
+                    link["force_category"] = "court"
                 all_links.append(link)
     return all_links[:40]
 
@@ -201,6 +222,7 @@ def _scrape_source(source_name: str, base_url: str, path_variants: list[str]) ->
 def scrape_lusaka_times() -> list[dict]:
     return _scrape_source("Lusaka Times", "https://www.lusakatimes.com", [
         "/tag/court/", "/category/court-news/", "/tag/court-news/",
+        "/tag/judiciary/", "/category/legal-news/",
     ])
 
 def scrape_zambia_daily_mail() -> list[dict]:
@@ -238,6 +260,16 @@ def scrape_kalemba_news() -> list[dict]:
         "/category/local/", "/category/politics/", "/category/business/",
     ])
 
+def scrape_mast_media() -> list[dict]:
+    return _scrape_source("Mast Media", "https://mastmediazm.com", [
+        "/category/courts-crime/", "/category/news/",
+    ])
+
+def scrape_zambian_observer() -> list[dict]:
+    return _scrape_source("Zambian Observer", "https://zambianobserver.com", [
+        "/category/court/", "/category/politics/", "/category/business/",
+    ])
+
 
 SCRAPERS = [
     ("Lusaka Times", scrape_lusaka_times),
@@ -248,6 +280,8 @@ SCRAPERS = [
     ("Daily Nation Zambia", scrape_daily_nation),
     ("Zambian Eye", scrape_zambian_eye),
     ("Kalemba News", scrape_kalemba_news),
+    ("Mast Media", scrape_mast_media),
+    ("Zambian Observer", scrape_zambian_observer),
 ]
 
 # ---------------------------------------------------------------------------
@@ -263,6 +297,8 @@ GOOGLE_QUERIES = [
     "site:dailynationzambia.com civil court ruling Zambia",
     "site:zambianeye.com civil court ruling Zambia",
     "site:kalemba.news civil court ruling Zambia",
+    "site:mastmediazm.com civil court ruling Zambia",
+    "site:zambianobserver.com civil court ruling Zambia",
     "Zambia civil lawsuit filed damages",
     "Zambia high court civil judgment",
     "Zambia industrial relations court labour ruling",
@@ -280,6 +316,8 @@ GOOGLE_SOURCE_MAP = {
     "dailynationzambia.com": "Daily Nation Zambia",
     "zambianeye.com": "Zambian Eye",
     "kalemba.news": "Kalemba News",
+    "mastmediazm.com": "Mast Media",
+    "zambianobserver.com": "Zambian Observer",
 }
 
 
@@ -333,7 +371,11 @@ def _fetch_and_filter(link: dict, existing_urls: set, scrape_id: str = "") -> Op
     if not title:
         return None
 
-    category = classify_article(title, detail["content"])
+    force_cat = link.get("force_category", "")
+    if force_cat:
+        category = force_cat
+    else:
+        category = classify_article(title, detail["content"])
     case_type = detect_case_type(_normalize(f"{title} {detail['content']}")) if category == "court" else "general"
 
     article_id = generate_id(title, link["source"])
@@ -375,7 +417,9 @@ def run_scrape() -> dict:
     all_links = []
 
     # Phase 1: scrape all sources in parallel
+    _set_progress("Scanning news sources", 0, f"0/{len(SCRAPERS)} sources")
     logger.info("Phase 1: Scraping %d sources in parallel...", len(SCRAPERS))
+    sources_done = 0
     with ThreadPoolExecutor(max_workers=SOURCE_WORKERS) as executor:
         futures = {}
         for source_name, scraper_fn in SCRAPERS:
@@ -390,16 +434,21 @@ def run_scrape() -> dict:
             except Exception as e:
                 logger.error("  %s failed: %s", source_name, e)
                 stats["errors"] += 1
+            sources_done += 1
+            _set_progress("Scanning news sources", round(sources_done / len(SCRAPERS) * 100), f"{sources_done}/{len(SCRAPERS)} sources done")
 
     # Phase 2: Google search in parallel
+    _set_progress("Scanning Google", 0, "Running queries...")
     logger.info("Phase 2: Google search discovery...")
     try:
         google_links = scrape_google_court_news()
         stats["google_results"] = len(google_links)
         all_links.extend(google_links)
+        _set_progress("Scanning Google", 100, f"{len(google_links)} results")
         logger.info("  Google: %d links", len(google_links))
     except Exception as e:
         logger.error("Google search error: %s", e)
+        _set_progress("Scanning Google", 100, "Search failed")
 
     # Deduplicate links
     seen_urls = set()
@@ -416,7 +465,9 @@ def run_scrape() -> dict:
     logger.info("Phase 3: Fetching %d new article pages with %d workers...", len(new_links), ARTICLE_WORKERS)
 
     # Phase 3: fetch articles in parallel
+    _set_progress("Scanning articles", 0, f"0/{len(new_links)} articles")
     new_articles = []
+    articles_done = 0
     with ThreadPoolExecutor(max_workers=ARTICLE_WORKERS) as executor:
         futures = {
             executor.submit(_fetch_and_filter, link, existing_urls, scrape_id): link
@@ -434,6 +485,9 @@ def run_scrape() -> dict:
             except Exception as e:
                 logger.debug("Article fetch failed: %s - %s", link.get("url", "?"), e)
                 stats["errors"] += 1
+            articles_done += 1
+            if new_links:
+                _set_progress("Scanning articles", round(articles_done / len(new_links) * 100), f"{articles_done}/{len(new_links)} articles")
 
     # Save
     existing.extend(new_articles)
