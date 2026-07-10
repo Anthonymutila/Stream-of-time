@@ -5,18 +5,75 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-NEWS_FILE = os.path.join(DATA_DIR, "court_news.json")
-HISTORY_FILE = os.path.join(DATA_DIR, "scrape_history.json")
-
-# In-memory cache
-_cache = {"articles": None, "mtime": 0, "id_index": {}}
-_history_cache = {"data": None, "mtime": 0}
+import psycopg2
+import psycopg2.extras
+from psycopg2 import pool
 
 
-def _ensure_data_dir():
-    os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+_connection_pool: pool.ThreadedConnectionPool | None = None
+
+
+def _get_pool() -> pool.ThreadedConnectionPool:
+    global _connection_pool
+    if _connection_pool is None:
+        _connection_pool = pool.ThreadedConnectionPool(
+            minconn=1,
+            maxconn=10,
+            dsn=DATABASE_URL,
+            sslmode="require",
+        )
+    return _connection_pool
+
+
+def _get_conn():
+    return _get_pool().getconn()
+
+
+def _put_conn(conn):
+    _get_pool().putconn(conn)
+
+
+def init_db():
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS articles (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                summary TEXT,
+                content TEXT,
+                source TEXT,
+                url TEXT UNIQUE,
+                published_date TEXT,
+                scraped_date TEXT,
+                category TEXT,
+                case_type TEXT,
+                image_url TEXT,
+                scrape_id TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_articles_url ON articles(url);
+            CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category);
+            CREATE INDEX IF NOT EXISTS idx_articles_scraped_date ON articles(scraped_date);
+
+            CREATE TABLE IF NOT EXISTS scrape_history (
+                id SERIAL PRIMARY KEY,
+                scrape_id TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                duration_seconds REAL,
+                stats TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_history_timestamp ON scrape_history(timestamp);
+        """)
+        conn.commit()
+        cur.close()
+    finally:
+        _put_conn(conn)
+
+
+init_db()
 
 
 def generate_id(title: str, source: str) -> str:
@@ -24,44 +81,60 @@ def generate_id(title: str, source: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
-def _rebuild_id_index(articles):
-    index = {}
-    for a in articles:
-        aid = a.get("id", "")
-        if aid:
-            index[aid] = a
-    return index
+def generate_scrape_id() -> str:
+    raw = f"{time.time()}|{os.getpid()}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
 
 
 def load_articles() -> list[dict]:
-    _ensure_data_dir()
-    if not os.path.exists(NEWS_FILE):
-        return []
+    conn = _get_conn()
     try:
-        mtime = os.path.getmtime(NEWS_FILE)
-        if _cache["articles"] is not None and _cache["mtime"] == mtime:
-            return _cache["articles"]
-        with open(NEWS_FILE, "r", encoding="utf-8") as f:
-            articles = json.load(f)
-        _cache["articles"] = articles
-        _cache["mtime"] = mtime
-        _cache["id_index"] = _rebuild_id_index(articles)
-        return articles
-    except (json.JSONDecodeError, IOError):
-        return []
-
-
-def _invalidate_cache():
-    _cache["articles"] = None
-    _cache["mtime"] = 0
-    _cache["id_index"] = {}
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT * FROM articles ORDER BY scraped_date DESC")
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(row) for row in rows]
+    finally:
+        _put_conn(conn)
 
 
 def save_articles(articles: list[dict]):
-    _ensure_data_dir()
-    with open(NEWS_FILE, "w", encoding="utf-8") as f:
-        json.dump(articles, f, ensure_ascii=False)
-    _invalidate_cache()
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM articles")
+        for a in articles:
+            cur.execute(
+                """INSERT INTO articles
+                   (id, title, summary, content, source, url, published_date,
+                    scraped_date, category, case_type, image_url, scrape_id)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   ON CONFLICT (id) DO UPDATE SET
+                    title=EXCLUDED.title, summary=EXCLUDED.summary,
+                    content=EXCLUDED.content, source=EXCLUDED.source,
+                    url=EXCLUDED.url, published_date=EXCLUDED.published_date,
+                    scraped_date=EXCLUDED.scraped_date, category=EXCLUDED.category,
+                    case_type=EXCLUDED.case_type, image_url=EXCLUDED.image_url,
+                    scrape_id=EXCLUDED.scrape_id""",
+                (
+                    a.get("id", ""),
+                    a.get("title", ""),
+                    a.get("summary", ""),
+                    a.get("content", ""),
+                    a.get("source", ""),
+                    a.get("url", ""),
+                    a.get("published_date", ""),
+                    a.get("scraped_date", ""),
+                    a.get("category", ""),
+                    a.get("case_type", ""),
+                    a.get("image_url", ""),
+                    a.get("scrape_id", ""),
+                ),
+            )
+        conn.commit()
+        cur.close()
+    finally:
+        _put_conn(conn)
 
 
 def article_exists(url: str, articles: list[dict]) -> bool:
@@ -77,8 +150,27 @@ def add_article(article: dict, articles: list[dict]) -> list[dict]:
 
 
 def get_article_by_id(article_id: str) -> Optional[dict]:
-    load_articles()
-    return _cache["id_index"].get(article_id)
+    conn = _get_conn()
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT * FROM articles WHERE id = %s", (article_id,))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+    finally:
+        _put_conn(conn)
+
+
+def article_url_exists(url: str) -> bool:
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM articles WHERE url = %s", (url.strip(),))
+        row = cur.fetchone()
+        cur.close()
+        return row is not None
+    finally:
+        _put_conn(conn)
 
 
 def deduplicate(articles: list[dict]) -> list[dict]:
@@ -92,45 +184,46 @@ def deduplicate(articles: list[dict]) -> list[dict]:
     return unique
 
 
-# ---------------------------------------------------------------------------
-# Scrape history
-# ---------------------------------------------------------------------------
-
 def load_history() -> list[dict]:
-    _ensure_data_dir()
-    if not os.path.exists(HISTORY_FILE):
-        return []
+    conn = _get_conn()
     try:
-        mtime = os.path.getmtime(HISTORY_FILE)
-        if _history_cache["data"] is not None and _history_cache["mtime"] == mtime:
-            return _history_cache["data"]
-        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        _history_cache["data"] = data
-        _history_cache["mtime"] = mtime
-        return data
-    except (json.JSONDecodeError, IOError):
-        return []
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(
+            "SELECT scrape_id, timestamp, duration_seconds, stats FROM scrape_history ORDER BY timestamp DESC"
+        )
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for row in rows:
+            entry = dict(row)
+            if entry.get("stats"):
+                try:
+                    entry["stats"] = json.loads(entry["stats"])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            result.append(entry)
+        return result
+    finally:
+        _put_conn(conn)
 
 
 def save_scrape_run(scrape_id: str, stats: dict, duration: float):
-    _ensure_data_dir()
-    history = load_history()
-    entry = {
-        "scrape_id": scrape_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "duration_seconds": round(duration, 1),
-        "stats": stats,
-    }
-    history.append(entry)
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False)
-    _history_cache["data"] = None
-
-
-def generate_scrape_id() -> str:
-    raw = f"{time.time()}|{os.getpid()}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO scrape_history (scrape_id, timestamp, duration_seconds, stats) VALUES (%s, %s, %s, %s)",
+            (
+                scrape_id,
+                datetime.now(timezone.utc).isoformat(),
+                round(duration, 1),
+                json.dumps(stats, ensure_ascii=False),
+            ),
+        )
+        conn.commit()
+        cur.close()
+    finally:
+        _put_conn(conn)
 
 
 def reclassify_articles():
