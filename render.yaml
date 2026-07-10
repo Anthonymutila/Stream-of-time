@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: stream-of-time
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: PYTHON_ENV
+        value: production

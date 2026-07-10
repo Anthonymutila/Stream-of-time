@@ -632,33 +632,234 @@ footer {
 .nav-icon {
     font-size: 1.1rem;
 }
-@media (max-width: 600px) {
-    .news-grid {
-        grid-template-columns: 1fr;
-    }
-    .article-detail h1 { font-size: 1.3rem; }
-    .header-actions-bar {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    .btn-refresh {
-        font-size: 0.8rem;
-        padding: 7px 14px;
-    }
+/* ---- Hamburger Menu ---- */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 200;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.hamburger span {
+    display: block;
+    width: 24px;
+    height: 3px;
+    background: #fff;
+    margin: 5px 0;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+/* ---- Mobile: 768px and below ---- */
+@media (max-width: 768px) {
+    .hamburger { display: block; }
+
     .header-nav {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        flex-wrap: wrap;
+        position: relative;
     }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #1a5276 0%, #16213e 100%);
+        padding: 12px;
+        gap: 4px;
+        z-index: 150;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        border-radius: 0 0 12px 12px;
+    }
+    .nav-links.open {
+        display: flex;
+    }
+
     .nav-link {
-        white-space: nowrap;
-        padding: 10px 14px;
-        font-size: 0.85rem;
+        white-space: normal;
+        padding: 14px 16px;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
     }
-    .nav-badges-below { display: none; }
+
+    .nav-logo img {
+        height: 60px;
+    }
+
+    .logo-clock-row {
+        gap: 6px;
+    }
+
+    .nav-badges-below {
+        display: none;
+    }
+
     .header-clock {
         padding: 4px 8px;
     }
     .clock-date { display: none; }
+
+    .container {
+        padding: 0 16px;
+    }
+
+    header {
+        margin-bottom: 20px;
+    }
+
+    .news-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .news-card {
+        border-radius: 12px;
+    }
+
+    .card-body {
+        padding: 14px;
+    }
+
+    .card-title {
+        font-size: 1rem;
+    }
+
+    .card-image img {
+        height: 180px;
+    }
+
+    .article-detail h1 {
+        font-size: 1.3rem;
+    }
+
+    .article-detail {
+        margin-bottom: 32px;
+    }
+
+    .article-content p {
+        font-size: 0.95rem;
+    }
+
+    .header-actions-bar {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .btn-refresh {
+        font-size: 0.85rem;
+        padding: 10px 18px;
+        min-height: 44px;
+    }
+
+    .filters {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+
+    .filter-group select {
+        width: 100%;
+        min-height: 44px;
+        font-size: 1rem;
+    }
+
+    .search-group {
+        min-width: 100%;
+    }
+
+    .search-group input {
+        min-height: 44px;
+        font-size: 1rem;
+    }
+
+    .archive-filters {
+        flex-wrap: wrap;
+    }
+
+    .year-btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 14px;
+    }
+
+    .back-to-top {
+        width: 48px;
+        height: 48px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 1.2rem;
+    }
+
+    .history-card {
+        padding: 16px;
+    }
+
+    .history-stats {
+        gap: 16px;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+    }
+
+    .about-card {
+        padding: 18px;
+    }
+
+    .about-card h2 {
+        font-size: 1.2rem;
+    }
+
+    footer {
+        padding: 20px 0;
+        margin-top: 24px;
+    }
+}
+
+/* ---- Small phones: 400px and below ---- */
+@media (max-width: 400px) {
+    .nav-logo img {
+        height: 48px;
+    }
+
+    .header-clock {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+
+    .clock-time {
+        font-size: 0.8rem;
+    }
+
+    .card-title {
+        font-size: 0.95rem;
+    }
+
+    .card-summary {
+        font-size: 0.82rem;
+    }
+
+    .btn {
+        width: 100%;
+        text-align: center;
+        min-height: 44px;
+    }
+
+    .article-detail h1 {
+        font-size: 1.2rem;
+    }
 }
 
 /* ---- Archive ---- */

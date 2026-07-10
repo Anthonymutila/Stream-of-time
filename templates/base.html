@@ -43,6 +43,9 @@
                             </div>
                         </div>
                     </div>
+                    <button class="hamburger" id="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+                        <span></span><span></span><span></span>
+                    </button>
                     <div class="nav-links">
                         <a href="{{ url_for('index') }}?scan=1" class="nav-link" data-page="index">
                             <span class="nav-icon">&#128240;</span> Current Stories
@@ -76,6 +79,12 @@
 
     <button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">Top</button>
     <script>
+        document.querySelectorAll('.nav-links .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelector('.nav-links').classList.remove('open');
+            });
+        });
+
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
         function updateClock() {
