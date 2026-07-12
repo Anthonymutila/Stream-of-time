@@ -98,7 +98,7 @@
         setInterval(updateClock, 1000);
 
         document.querySelectorAll('.nav-link').forEach(link => {
-            if (link.pathname === window.location.pathname) {
+            if (link.href === window.location.href || (link.pathname === window.location.pathname && !link.search && !window.location.search)) {
                 link.classList.add('active');
             }
         });

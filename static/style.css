@@ -705,7 +705,9 @@ footer {
     .header-clock {
         padding: 4px 8px;
     }
-    .clock-date { display: none; }
+    .clock-date {
+        font-size: 0.75rem;
+    }
 
     .container {
         padding: 0 16px;
