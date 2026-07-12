@@ -221,43 +221,39 @@ def _scrape_source(source_name: str, base_url: str, path_variants: list[str]) ->
 
 def scrape_lusaka_times() -> list[dict]:
     return _scrape_source("Lusaka Times", "https://www.lusakatimes.com", [
-        "/tag/court/", "/category/court-news/", "/tag/court-news/",
-        "/tag/judiciary/", "/category/legal-news/",
+        "/headlines/", "/other-news/", "/economy/",
+        "/health/", "/ruralnews/",
     ])
 
 def scrape_zambia_daily_mail() -> list[dict]:
-    return _scrape_source("Zambia Daily Mail", "https://www.zambiadailymail.com", [
-        "/category/court-news/", "/category/news/",
-    ])
+    return []
 
 def scrape_times_of_zambia() -> list[dict]:
     return _scrape_source("Times of Zambia", "https://www.times.co.zm", [
-        "/category/court-news/", "/court-news/",
+        "/news/", "/court-news/", "/business/",
+        "/features/", "/sports/",
     ])
 
 def scrape_mwebantu() -> list[dict]:
     return _scrape_source("Mwebantu", "https://www.mwebantu.com", [
-        "/category/court/", "/category/news/",
+        "/category/police/", "/category/politics/", "/category/business/",
     ])
 
 def scrape_zambia_reports() -> list[dict]:
-    return _scrape_source("Zambia Reports", "https://www.zambiareports.com", [
-        "/category/court-news/", "/category/news/",
-    ])
+    return []
 
 def scrape_daily_nation() -> list[dict]:
-    return _scrape_source("Daily Nation Zambia", "https://www.dailynationzambia.com", [
-        "/category/court/", "/category/news/",
-    ])
+    return []
 
 def scrape_zambian_eye() -> list[dict]:
     return _scrape_source("Zambian Eye", "https://www.zambianeye.com", [
-        "/tag/court/", "/category/news/",
+        "/latest/", "/politics/", "/business/",
     ])
 
 def scrape_kalemba_news() -> list[dict]:
     return _scrape_source("Kalemba News", "https://kalemba.news", [
         "/category/local/", "/category/politics/", "/category/business/",
+        "/category/court/",
     ])
 
 def scrape_mast_media() -> list[dict]:
@@ -267,7 +263,7 @@ def scrape_mast_media() -> list[dict]:
 
 def scrape_zambian_observer() -> list[dict]:
     return _scrape_source("Zambian Observer", "https://zambianobserver.com", [
-        "/category/court/", "/category/politics/", "/category/business/",
+        "/court/", "/politics/", "/africa/",
     ])
 
 
