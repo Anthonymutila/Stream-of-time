@@ -436,15 +436,15 @@ header {
 }
 
 .article-content p.highlighted {
-    background: #ffe600;
+    background: #fff3a3;
     color: #1a1a1a;
-    border-left: 3px solid #cca300;
+    border-left: 3px solid #e6c84c;
     padding-left: 10px;
 }
 
 html.dark .article-content p.highlighted {
-    background: rgba(255, 230, 0, 0.25);
-    color: #ffe600;
+    background: rgba(255, 243, 163, 0.25);
+    color: #f5d96e;
 }
 
 .article-content p:hover {
@@ -452,11 +452,11 @@ html.dark .article-content p.highlighted {
 }
 
 .article-content p.highlighted:hover {
-    background: #ffed4a;
+    background: #ffe97a;
 }
 
 html.dark .article-content p.highlighted:hover {
-    background: rgba(255, 230, 0, 0.32);
+    background: rgba(255, 243, 163, 0.32);
 }
 
 .highlight-toggle {
@@ -481,8 +481,8 @@ html.dark .article-content p.highlighted:hover {
 }
 
 .highlight-toggle.active {
-    background: #ffe600;
-    border-color: #cca300;
+    background: #fff3a3;
+    border-color: #e6c84c;
     color: #1a1a1a;
 }
 
