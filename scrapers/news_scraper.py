@@ -251,8 +251,9 @@ def scrape_daily_nation() -> list[dict]:
     ])
 
 def scrape_zambian_eye() -> list[dict]:
-    return _scrape_source("Zambian Eye", "https://www.zambianeye.com", [
-        "/latest/", "/politics/", "/business/",
+    return _scrape_source("Zambian Eye", "https://zambianeye.com", [
+        "/category/breaking-news/", "/category/politics/", "/category/business/",
+        "/category/education/", "/category/health/",
     ])
 
 def scrape_kalemba_news() -> list[dict]:
@@ -278,6 +279,7 @@ SCRAPERS = [
     ("Times of Zambia", scrape_times_of_zambia),
     ("Mwebantu", scrape_mwebantu),
     ("Daily Nation Zambia", scrape_daily_nation),
+    ("Zambian Eye", scrape_zambian_eye),
     ("Kalemba News", scrape_kalemba_news),
     ("Mast Media", scrape_mast_media),
     ("Zambian Observer", scrape_zambian_observer),
