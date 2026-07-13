@@ -44,7 +44,8 @@
 {% block scripts %}
 <script>
 (function() {
-    const ACTION_RE = /\b(will|shall|is set to|plans to|aims to|expects to|has (?:decided|approved|passed|launched|introduced|signed|rejected|ordered|ruled|declared|proposed|unveiled|committed|pledged|promised|commenced|concluded|terminated|suspended|dissolved|appointed|dismissed|allocated|disbursed|increased|reduced|invested|announced)|was (?:sentenced|convicted|acquitted|fined|jailed|arrested|charged|suspended|banned|deported|elected|appointed|dismissed|suspended|resigned|found)|have (?:decided|approved|passed|launched|introduced|signed)|are (?:set to|expected to|planning to)|is (?:set to|expected to|planning to|under investigation)|to (?:implement|introduce|launch|pass|sign|approve|reject|increase|reduce|ban|suspend|arrest|charge|fine|jail|deport|invest|allocate|disburse)|implement|introduce|launch|pass|sign|approve|reject|arrest|charge|fine|jail|convict|acquit|sentence|suspend|ban|deport|announce|declare|order|rule|propose|pledge|commit|allocate|disburse|increase|reduce|invest|amend|ratify|enforce|dissolve|appoint|dismiss|resign|elect|inaugurate|overhaul|revise|establish|dissolve|revoke|impose|levy|enact|tabling|tabled| gazette| gazetted)\b/i;
+    const FILLER_RE = /^(share this|click here|read more|subscribe|follow us|related articles|comments|advertisement|sponsored|advertisement by|loading\.\.\.|please enable|by continuing|cookie|privacy policy|terms of|sign up|newsletter|trending|more from|you may also|image|photo|credit|source:|filed under|tagged|leave a reply)/i;
+    const SHORT_THRESHOLD = 30;
 
     const paras = document.querySelectorAll('.article-content p');
     const toggle = document.createElement('button');
@@ -59,13 +60,11 @@
 
     paras.forEach((p, i) => {
         const text = p.textContent.trim();
-        if (text.length < 20) return;
-        const isAction = i === 0 || ACTION_RE.test(text);
-        if (isAction) {
-            p.classList.add('auto-highlight');
-            p.classList.add('highlighted');
-            highlightedCount++;
-        }
+        if (text.length < SHORT_THRESHOLD) return;
+        if (FILLER_RE.test(text)) return;
+        p.classList.add('auto-highlight');
+        p.classList.add('highlighted');
+        highlightedCount++;
         p.addEventListener('click', function() {
             if (!active) return;
             this.classList.toggle('highlighted');
