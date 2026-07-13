@@ -278,7 +278,6 @@ SCRAPERS = [
     ("Times of Zambia", scrape_times_of_zambia),
     ("Mwebantu", scrape_mwebantu),
     ("Daily Nation Zambia", scrape_daily_nation),
-    ("Zambian Eye", scrape_zambian_eye),
     ("Kalemba News", scrape_kalemba_news),
     ("Mast Media", scrape_mast_media),
     ("Zambian Observer", scrape_zambian_observer),
