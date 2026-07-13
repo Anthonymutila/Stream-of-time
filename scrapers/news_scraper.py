@@ -97,10 +97,10 @@ def _decode_response(resp: requests.Response) -> str:
     return raw.decode(encoding, errors="replace")
 
 
-def _get_page(url: str, retries: int = 1) -> Optional[BeautifulSoup]:
+def _get_page(url: str, retries: int = 2) -> Optional[BeautifulSoup]:
     for attempt in range(retries):
         try:
-            resp = _session.get(url, timeout=5)
+            resp = _session.get(url, timeout=15)
             resp.raise_for_status()
             ct = resp.headers.get("Content-Type", "")
             if "html" not in ct and "xml" not in ct and "text" not in ct:
@@ -111,8 +111,9 @@ def _get_page(url: str, retries: int = 1) -> Optional[BeautifulSoup]:
                 return None
             return BeautifulSoup(html, "lxml")
         except requests.RequestException as e:
+            logger.warning("Attempt %d/%d failed for %s: %s", attempt + 1, retries, url, e)
             if attempt < retries - 1:
-                time.sleep(0.3)
+                time.sleep(1)
     return None
 
 
@@ -207,6 +208,7 @@ def _scrape_source(source_name: str, base_url: str, path_variants: list[str]) ->
     for listing_url in urls_to_try:
         soup = _get_page(listing_url)
         if not soup:
+            logger.warning("  %s: failed to load %s", source_name, listing_url)
             continue
         links = _collect_links_from_page(soup, base_url, source_name)
         is_court_page = any(cp in listing_url.lower() for cp in court_paths)
