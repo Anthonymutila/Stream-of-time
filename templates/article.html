@@ -89,4 +89,132 @@
     });
 })();
 </script>
+<script>
+(function() {
+    const DICT = {
+        "UPND": { def: "United Party for National Development — Zambia's ruling political party since 2021 under President Hichilema.", ex: "UPND won the general election with a decisive victory." },
+        "PF": { def: "Patriotic Front — Zambia's main opposition political party, formerly in power from 2011 to 2021.", ex: "PF condemned the government's decision on the new tax policy." },
+        "HH": { def: "Hakainde Hichilema — President of Zambia since August 2021.", ex: "HH promised to tackle corruption and revive the economy." },
+        "Hichilema": { def: "Hakainde Hichilema — President of Zambia, leader of the UPND party.", ex: "President Hichilema signed the bill into law yesterday." },
+        "Lungu": { def: "Edgar Lungu — Former President of Zambia (2015–2021), leader of the PF party.", ex: "Lungu faces multiple corruption charges in court." },
+        "ACC": { def: "Anti-Corruption Commission — Zambia's body responsible for investigating and preventing corruption.", ex: "The ACC arrested three officials for embezzlement of public funds." },
+        "DEC": { def: "Drug Enforcement Commission — Zambia's agency that combats drug trafficking and money laundering.", ex: "DEC seized cocaine worth millions of kwacha at the border." },
+        "ZNBC": { def: "Zambia National Broadcasting Corporation — Zambia's state-owned national broadcaster.", ex: "ZNBC aired the president's address to the nation last night." },
+        "ZRA": { def: "Zambia Revenue Authority — The government agency responsible for collecting taxes.", ex: "ZRA reported a 15 percent increase in tax revenue this quarter." },
+        "ZESCO": { def: "Zambia Electricity Supply Corporation — The national power utility company.", ex: "ZESCO announced scheduled load shedding in Lusaka this week." },
+        "CEEC": { def: "Citizens Economic Empowerment Commission — A Zambian agency that provides funding for small businesses.", ex: "CEEC disbursed K50 million in loans to youth entrepreneurs." },
+        "NAPSA": { def: "National Pension Scheme Authority — Zambia's public pension fund administrator.", ex: "NAPSA urged members to update their contribution records." },
+        "ZANIS": { def: "Zambia News and Information Services — The government's official news agency.", ex: "ZANIS reported that the new hospital will open next month." },
+        "MMD": { def: "Movement for Multi-party Democracy — A former ruling political party in Zambia, now largely inactive.", ex: "MMD played a key role in Zambia's transition to multi-party democracy in 1991." },
+        "FDD": { def: "Forum for Democracy and Development — A Zambian opposition political party.", ex: "FDD called for transparent elections in the upcoming polls." },
+        "NDF": { def: "National Defence Force — Zambia's military armed forces.", ex: "The NDF deployed troops to assist with flood relief operations." },
+        "defamation": { def: "The act of making false statements that damage someone's reputation; a civil wrong (tort).", ex: "The politician filed a defamation lawsuit against the newspaper." },
+        "injunction": { def: "A court order requiring a person to do or stop doing a specific act.", ex: "The court granted an injunction preventing the company from demolishing the building." },
+        "subpoena": { def: "A legal document ordering someone to attend court or produce evidence.", ex: "The witness was served with a subpoena to appear before the judge." },
+        "liquidation": { def: "The process of closing a company and selling its assets to pay debts.", ex: "The company was placed into liquidation after failing to repay its creditors." },
+        "receivership": { def: "A situation where a court-appointed receiver manages a company's assets on behalf of creditors.", ex: "The bank placed the firm into receivership following massive losses." },
+        "arbitration": { def: "A method of resolving disputes outside of court, using an independent arbitrator.", ex: "The labour dispute was settled through arbitration rather than litigation." },
+        "acquittal": { def: "A formal declaration that a person is not guilty of a criminal charge.", ex: "The accused was granted acquittal after the prosecution failed to provide evidence." },
+        "indictment": { def: "A formal charge or accusation of a serious crime.", ex: "The grand jury issued an indictment against the former minister." },
+        "remand": { def: "The act of sending a accused person back into custody pending further legal proceedings.", ex: "The magistrate remanded the suspect in custody for 14 days." },
+        "bail": { def: "The temporary release of an accused person, usually with a financial guarantee.", ex: "The judge granted bail of K50,000 with two sureties." },
+        "verdict": { def: "A decision made by a judge or jury at the end of a trial.", ex: "The jury returned a verdict of guilty on all charges." },
+        "negligence": { def: "Failure to take reasonable care, resulting in damage or harm to another person.", ex: "The hospital was found liable for negligence in the patient's death." },
+        "plaintiff": { def: "A person who brings a case against another in a civil court.", ex: "The plaintiff claims K2 million in damages for breach of contract." },
+        "defendant": { def: "A person accused in a court case; the party being sued or charged.", ex: "The defendant pleaded not guilty to all charges." },
+        "tort": { def: "A civil wrong that causes harm, for which the law provides a remedy, usually damages.", ex: "The case was filed under tort law for personal injury." },
+        "litigation": { def: "The process of taking legal action; a lawsuit.", ex: "The company faces costly litigation from multiple shareholders." },
+        "affidavit": { def: "A written statement confirmed by oath or affirmation, used as evidence in court.", ex: "The lawyer submitted an affidavit supporting the application." },
+        "caucus": { def: "A meeting of party members to select candidates or decide policy.", ex: "The UPND caucus met to discuss the upcoming budget vote." },
+        "ballot": { def: "A system of voting secretly in writing.", ex: "Voters cast their ballot at the designated polling station." },
+        "constituency": { def: "An area whose voters elect a representative to parliament.", ex: "The Lusaka Central constituency recorded the highest voter turnout." },
+        "manifesto": { def: "A public declaration of policy and aims, especially by a political party.", ex: "The party released its manifesto promising free education." },
+        "referendum": { def: "A general vote on a particular proposal or constitutional amendment.", ex: "The government held a referendum on the proposed new constitution." },
+        "impeachment": { def: "A formal charge of misconduct against a public official.", ex: "Parliament voted to begin impeachment proceedings against the judge." },
+        "adjournment": { def: "A temporary suspension of proceedings until a later time or date.", ex: "The court granted an adjournment to allow the defence more time." },
+        "electorate": { def: "All the people in a country who are entitled to vote.", ex: "The total electorate for this election was over 7 million citizens." },
+        "treasury": { def: "The government department responsible for managing national finances.", ex: "The treasury announced new measures to reduce the budget deficit." },
+        "bond": { def: "A government debt security; a fixed-interest investment.", ex: "The treasury issued K5 billion in government bonds this quarter." },
+        "inflation": { def: "The rate at which the general level of prices rises, reducing purchasing power.", ex: "Zambia's inflation rate rose to 10.2 percent last month." },
+        "dividend": { def: "A sum of money paid to shareholders from a company's profits.", ex: "ZCCM declared a dividend of K5 per share for the financial year." },
+        "merger": { def: "The combining of two companies into one, through a legal process.", ex: "The bank merger was approved by the competition authority." },
+        "acquisition": { def: "The purchase of one company by another.", ex: "The foreign firm completed the acquisition of the Zambian mining company." },
+        "tariff": { def: "A tax or duty imposed on imports or exports of goods.", ex: "The government increased tariffs on imported steel products." },
+        "kwacha": { def: "The Zambian currency; the basic monetary unit (ZMW).", ex: "The kwacha appreciated against the US dollar this week." },
+        "load shedding": { def: "Scheduled, controlled power outages due to electricity supply shortages.", ex: "ZESCO extended load shedding to 12 hours a day in some areas." },
+        "High Court": { def: "Zambia's superior court of record with unlimited original jurisdiction in civil and criminal matters.", ex: "The case was transferred to the High Court for trial." },
+        "Magistrate": { def: "A judicial officer who presides over a magistrates court, handling less serious criminal and civil cases.", ex: "The magistrate sentenced the thief to 12 months imprisonment." },
+        "Supreme Court": { def: "Zambia's highest court of appeal; the final judicial authority.", ex: "The Supreme Court upheld the lower court's decision." },
+        "Constitutional Court": { def: "A court in Zambia that handles cases involving constitutional interpretation and disputes.", ex: "The Constitutional Court dismissed the petition challenging the election results." },
+        "Industrial Relations Court": { def: "A specialized court in Zambia that handles employment and labour disputes.", ex: "The worker filed a case at the Industrial Relations Court for wrongful dismissal." },
+    };
+
+    const popup = document.createElement('div');
+    popup.className = 'dict-popup';
+    popup.style.display = 'none';
+    document.body.appendChild(popup);
+
+    let activeTerm = null;
+
+    function showPopup(el) {
+        const word = el.getAttribute('data-word');
+        const entry = DICT[word];
+        if (!entry) return;
+        activeTerm = el;
+        popup.innerHTML =
+            '<strong>' + word + '</strong>' +
+            '<p class="dict-def">' + entry.def + '</p>' +
+            '<p class="dict-ex"><em>e.g. "' + entry.ex + '"</em></p>';
+        popup.style.display = 'block';
+        const rect = el.getBoundingClientRect();
+        let top = rect.bottom + window.scrollY + 8;
+        let left = rect.left + window.scrollX;
+        if (left + 320 > window.innerWidth) {
+            left = window.innerWidth - 330;
+        }
+        if (left < 10) left = 10;
+        popup.style.top = top + 'px';
+        popup.style.left = left + 'px';
+    }
+
+    function hidePopup() {
+        popup.style.display = 'none';
+        activeTerm = null;
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('dict-term')) {
+            if (activeTerm === e.target) {
+                hidePopup();
+            } else {
+                showPopup(e.target);
+            }
+            return;
+        }
+        if (!popup.contains(e.target)) {
+            hidePopup();
+        }
+    });
+
+    var terms = Object.keys(DICT).sort(function(a, b) { return b.length - a.length; });
+    var pattern = terms.map(function(t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|');
+    var re = new RegExp('\\b(' + pattern + ')\\b', 'gi');
+
+    document.querySelectorAll('.article-content p').forEach(function(p) {
+        if (p.querySelector('.dict-term')) return;
+        var html = p.innerHTML;
+        var matched = false;
+        var newHtml = html.replace(re, function(m) {
+            var key = null;
+            for (var i = 0; i < terms.length; i++) {
+                if (terms[i].toLowerCase() === m.toLowerCase()) { key = terms[i]; break; }
+            }
+            if (!key) return m;
+            matched = true;
+            return '<span class="dict-term" data-word="' + key + '">' + m + '</span>';
+        });
+        if (matched) p.innerHTML = newHtml;
+    });
+})();
+</script>
 {% endblock %}

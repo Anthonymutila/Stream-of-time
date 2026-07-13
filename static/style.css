@@ -493,6 +493,65 @@ html.dark .article-content p.highlighted:hover {
     margin-left: 8px;
 }
 
+/* ---- Dictionary Tooltips ---- */
+.dict-term {
+    border-bottom: 1.5px dotted #7f8c8d;
+    cursor: help;
+    transition: background 0.15s;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+.dict-term:hover {
+    background: rgba(41, 128, 185, 0.12);
+}
+
+.dict-popup {
+    position: absolute;
+    z-index: 999;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    max-width: 320px;
+    min-width: 220px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text);
+    pointer-events: auto;
+}
+
+.dict-popup strong {
+    font-size: 0.95rem;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.dict-popup .dict-def {
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.dict-popup .dict-ex {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+}
+
+html.dark .dict-popup {
+    background: #2a2a4a;
+    border-color: #444466;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+html.dark .dict-term:hover {
+    background: rgba(255, 230, 0, 0.12);
+}
+
 .article-footer {
     margin-top: 32px;
     padding-top: 20px;
