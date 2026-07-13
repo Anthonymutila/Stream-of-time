@@ -198,20 +198,32 @@ def _collect_links_from_page(soup: BeautifulSoup, base_url: str, source_name: st
 
 def _scrape_rss(source_name: str, feed_url: str) -> list[dict]:
     """Parse an RSS feed and return a list of link dicts."""
-    soup = _get_page(feed_url)
-    if not soup:
+    try:
+        resp = _session.get(feed_url, timeout=15)
+        resp.raise_for_status()
+        raw = resp.content
+        if raw[:2] == b'\x1f\x8b':
+            try:
+                raw = gzip.decompress(raw)
+            except Exception:
+                pass
+        root = ET.fromstring(raw)
+    except Exception as e:
+        logger.warning("  %s: failed to fetch RSS feed %s: %s", source_name, feed_url, e)
         return []
     articles = []
-    for item in soup.find_all("item"):
-        title_tag = item.find("title")
-        link_tag = item.find("link")
-        if not title_tag or not link_tag:
+    ns = {"content": "http://purl.org/rss/1.0/modules/content/"}
+    for item in root.iter("item"):
+        title_el = item.find("title")
+        link_el = item.find("link")
+        if title_el is None or link_el is None:
             continue
-        title = title_tag.get_text(strip=True)
-        url = link_tag.get_text(strip=True)
-        if len(title) < 20:
+        title = (title_el.text or "").strip()
+        url = (link_el.text or "").strip()
+        if len(title) < 20 or not url:
             continue
         articles.append({"url": url, "title": title, "source": source_name})
+    logger.info("  %s (RSS): %d links", source_name, len(articles))
     return articles[:40]
 
 
