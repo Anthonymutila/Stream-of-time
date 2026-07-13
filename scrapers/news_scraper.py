@@ -3,6 +3,7 @@ import zlib
 import time
 import random
 import logging
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Optional
@@ -195,6 +196,25 @@ def _collect_links_from_page(soup: BeautifulSoup, base_url: str, source_name: st
     return articles
 
 
+def _scrape_rss(source_name: str, feed_url: str) -> list[dict]:
+    """Parse an RSS feed and return a list of link dicts."""
+    soup = _get_page(feed_url)
+    if not soup:
+        return []
+    articles = []
+    for item in soup.find_all("item"):
+        title_tag = item.find("title")
+        link_tag = item.find("link")
+        if not title_tag or not link_tag:
+            continue
+        title = title_tag.get_text(strip=True)
+        url = link_tag.get_text(strip=True)
+        if len(title) < 20:
+            continue
+        articles.append({"url": url, "title": title, "source": source_name})
+    return articles[:40]
+
+
 # ---------------------------------------------------------------------------
 # Source-specific scrapers — each returns a list of link dicts
 # ---------------------------------------------------------------------------
@@ -222,10 +242,7 @@ def _scrape_source(source_name: str, base_url: str, path_variants: list[str]) ->
 
 
 def scrape_lusaka_times() -> list[dict]:
-    return _scrape_source("Lusaka Times", "https://www.lusakatimes.com", [
-        "/headlines/", "/other-news/", "/economy/",
-        "/health/", "/ruralnews/",
-    ])
+    return _scrape_rss("Lusaka Times", "https://www.lusakatimes.com/feed/")
 
 def scrape_zambia_daily_mail() -> list[dict]:
     return []
@@ -251,10 +268,7 @@ def scrape_daily_nation() -> list[dict]:
     ])
 
 def scrape_zambian_eye() -> list[dict]:
-    return _scrape_source("Zambian Eye", "https://zambianeye.com", [
-        "/category/breaking-news/", "/category/politics/", "/category/business/",
-        "/category/education/", "/category/health/",
-    ])
+    return _scrape_rss("Zambian Eye", "https://zambianeye.com/feed/")
 
 def scrape_kalemba_news() -> list[dict]:
     return _scrape_source("Kalemba News", "https://kalemba.news", [
