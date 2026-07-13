@@ -3,7 +3,7 @@ import zlib
 import time
 import random
 import logging
-import xml.etree.ElementTree as ET
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Optional
@@ -196,37 +196,6 @@ def _collect_links_from_page(soup: BeautifulSoup, base_url: str, source_name: st
     return articles
 
 
-def _scrape_rss(source_name: str, feed_url: str) -> list[dict]:
-    """Parse an RSS feed and return a list of link dicts."""
-    try:
-        resp = _session.get(feed_url, timeout=15)
-        resp.raise_for_status()
-        raw = resp.content
-        if raw[:2] == b'\x1f\x8b':
-            try:
-                raw = gzip.decompress(raw)
-            except Exception:
-                pass
-        root = ET.fromstring(raw)
-    except Exception as e:
-        logger.warning("  %s: failed to fetch RSS feed %s: %s", source_name, feed_url, e)
-        return []
-    articles = []
-    ns = {"content": "http://purl.org/rss/1.0/modules/content/"}
-    for item in root.iter("item"):
-        title_el = item.find("title")
-        link_el = item.find("link")
-        if title_el is None or link_el is None:
-            continue
-        title = (title_el.text or "").strip()
-        url = (link_el.text or "").strip()
-        if len(title) < 20 or not url:
-            continue
-        articles.append({"url": url, "title": title, "source": source_name})
-    logger.info("  %s (RSS): %d links", source_name, len(articles))
-    return articles[:40]
-
-
 # ---------------------------------------------------------------------------
 # Source-specific scrapers — each returns a list of link dicts
 # ---------------------------------------------------------------------------
@@ -253,12 +222,6 @@ def _scrape_source(source_name: str, base_url: str, path_variants: list[str]) ->
     return all_links[:40]
 
 
-def scrape_lusaka_times() -> list[dict]:
-    return _scrape_rss("Lusaka Times", "https://www.lusakatimes.com/feed/")
-
-def scrape_zambia_daily_mail() -> list[dict]:
-    return []
-
 def scrape_times_of_zambia() -> list[dict]:
     return _scrape_source("Times of Zambia", "https://www.times.co.zm", [
         "/news/", "/court-news/", "/business/",
@@ -270,17 +233,11 @@ def scrape_mwebantu() -> list[dict]:
         "/category/police/", "/category/politics/", "/category/business/",
     ])
 
-def scrape_zambia_reports() -> list[dict]:
-    return []
-
 def scrape_daily_nation() -> list[dict]:
     return _scrape_source("Daily Nation Zambia", "https://dailynationzambia.com", [
         "/category/news/", "/category/court/", "/category/business/",
         "/category/local/", "/category/local/politics/",
     ])
-
-def scrape_zambian_eye() -> list[dict]:
-    return _scrape_rss("Zambian Eye", "https://zambianeye.com/feed/")
 
 def scrape_kalemba_news() -> list[dict]:
     return _scrape_source("Kalemba News", "https://kalemba.news", [
@@ -301,11 +258,9 @@ def scrape_zambian_observer() -> list[dict]:
 
 
 SCRAPERS = [
-    ("Lusaka Times", scrape_lusaka_times),
     ("Times of Zambia", scrape_times_of_zambia),
     ("Mwebantu", scrape_mwebantu),
     ("Daily Nation Zambia", scrape_daily_nation),
-    ("Zambian Eye", scrape_zambian_eye),
     ("Kalemba News", scrape_kalemba_news),
     ("Mast Media", scrape_mast_media),
     ("Zambian Observer", scrape_zambian_observer),
