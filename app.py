@@ -7,7 +7,7 @@ import requests as http_requests
 from flask import Flask, render_template, jsonify, request, url_for
 
 from utils.storage import load_articles, get_article_by_id, save_scrape_run, load_history, reclassify_articles
-from scrapers.news_scraper import run_scrape, get_progress
+from scrapers.news_scraper import run_scrape, get_progress, SCRAPERS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ def index():
     if category:
         articles = [a for a in articles if a.get("category", "").lower() == category]
     articles.sort(key=lambda a: a.get("published_date") or a.get("scraped_date") or "", reverse=True)
-    sources = sorted({a["source"] for a in articles})
+    sources = sorted({a["source"] for a in articles} | {name for name, _ in SCRAPERS})
     case_types = sorted({a.get("case_type", "") for a in articles})
     return render_template(
         "index.html",
