@@ -354,10 +354,11 @@ def _fetch_and_filter(link: dict, existing_urls: set, scrape_id: str = "") -> Op
         return None
 
     force_cat = link.get("force_category", "")
-    if force_cat:
+    keyword_cat = classify_article(title, detail["content"])
+    if force_cat and keyword_cat == "general":
         category = force_cat
     else:
-        category = classify_article(title, detail["content"])
+        category = keyword_cat
     case_type = detect_case_type(_normalize(f"{title} {detail['content']}")) if category == "court" else "general"
 
     article_id = generate_id(title, link["source"])
