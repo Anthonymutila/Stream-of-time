@@ -40,3 +40,54 @@
     </div>
 </article>
 {% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const ACTION_RE = /\b(will|shall|is set to|plans to|aims to|expects to|has (?:decided|approved|passed|launched|introduced|signed|rejected|ordered|ruled|declared|proposed|unveiled|committed|pledged|promised|commenced|concluded|terminated|suspended|dissolved|appointed|dismissed|allocated|disbursed|increased|reduced|invested|announced)|was (?:sentenced|convicted|acquitted|fined|jailed|arrested|charged|suspended|banned|deported|elected|appointed|dismissed|suspended|resigned|found)|have (?:decided|approved|passed|launched|introduced|signed)|are (?:set to|expected to|planning to)|is (?:set to|expected to|planning to|under investigation)|to (?:implement|introduce|launch|pass|sign|approve|reject|increase|reduce|ban|suspend|arrest|charge|fine|jail|deport|invest|allocate|disburse)|implement|introduce|launch|pass|sign|approve|reject|arrest|charge|fine|jail|convict|acquit|sentence|suspend|ban|deport|announce|declare|order|rule|propose|pledge|commit|allocate|disburse|increase|reduce|invest|amend|ratify|enforce|dissolve|appoint|dismiss|resign|elect|inaugurate|overhaul|revise|establish|dissolve|revoke|impose|levy|enact|tabling|tabled| gazette| gazetted)\b/i;
+
+    const paras = document.querySelectorAll('.article-content p');
+    const toggle = document.createElement('button');
+    toggle.className = 'highlight-toggle active';
+    toggle.innerHTML = '&#128161; Highlight key points';
+    const countSpan = document.createElement('span');
+    countSpan.className = 'highlight-count';
+    toggle.appendChild(countSpan);
+
+    let active = true;
+    let highlightedCount = 0;
+
+    paras.forEach((p, i) => {
+        const text = p.textContent.trim();
+        if (text.length < 20) return;
+        const isAction = i === 0 || ACTION_RE.test(text);
+        if (isAction) {
+            p.classList.add('auto-highlight');
+            p.classList.add('highlighted');
+            highlightedCount++;
+        }
+        p.addEventListener('click', function() {
+            if (!active) return;
+            this.classList.toggle('highlighted');
+        });
+    });
+
+    countSpan.textContent = highlightedCount + ' key point' + (highlightedCount !== 1 ? 's' : '');
+
+    const articleContent = document.querySelector('.article-content');
+    if (articleContent) {
+        articleContent.parentNode.insertBefore(toggle, articleContent);
+    }
+
+    toggle.addEventListener('click', function() {
+        active = !active;
+        this.classList.toggle('active', active);
+        paras.forEach(p => {
+            if (p.classList.contains('auto-highlight')) {
+                p.classList.toggle('highlighted', active);
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

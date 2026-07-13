@@ -429,6 +429,65 @@ header {
     margin-bottom: 16px;
     font-size: 1rem;
     line-height: 1.75;
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.article-content p.highlighted {
+    background: #fef9b0;
+    border-left: 3px solid #f1c40f;
+    padding-left: 10px;
+}
+
+html.dark .article-content p.highlighted {
+    background: rgba(254, 249, 176, 0.15);
+}
+
+.article-content p:hover {
+    background: #f0f3f7;
+}
+
+.article-content p.highlighted:hover {
+    background: #f5eda0;
+}
+
+html.dark .article-content p.highlighted:hover {
+    background: rgba(254, 249, 176, 0.22);
+}
+
+.highlight-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card-bg);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.2s;
+}
+
+.highlight-toggle:hover {
+    border-color: #f1c40f;
+    color: #b7950b;
+}
+
+.highlight-toggle.active {
+    background: #fef9b0;
+    border-color: #f1c40f;
+    color: #7d6608;
+}
+
+.highlight-count {
+    font-size: 0.78rem;
+    color: var(--text-light);
+    margin-left: 8px;
 }
 
 .article-footer {
